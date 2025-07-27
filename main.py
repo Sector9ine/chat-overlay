@@ -63,6 +63,6 @@ def start_background_thread():
         thread = threading.Thread(target=listen_to_kick_chat, args=(chatroom_id,), daemon=True)
         thread.start()
 
-socketio.run(app)
+socketio.run(app, allow_unsafe_werkzeug=True)
 
 
