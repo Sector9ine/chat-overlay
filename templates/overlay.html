@@ -65,12 +65,7 @@
                 pad(bangkokDate.getSeconds());
 
             // Show the Bangkok time above the message, in grey
-            document.getElementById('chat').innerHTML +=
-                `<div style="color:#888;font-size:0.95em;">${formattedBangkok}</div>`;
-
             const chatDiv = document.getElementById('chat');
-
-            // Add new message as a div
             const msgDiv = document.createElement('div');
             msgDiv.innerHTML = `<div style="color:#888;font-size:0.95em;">${formattedBangkok}</div><b>${username}:</b> ${content}`;
             chatDiv.appendChild(msgDiv);
