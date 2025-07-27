@@ -6,7 +6,6 @@
         #chat {
             font-family: "Hack", "DejaVu Sans Mono", "Fira Mono", "Noto Mono", "Consolas", "Menlo", "Monaco", "Courier New", monospace;
             font-size: 1.1em;
-            background: #181818;
             color: #ffffff;
             padding: 10px;
             border-radius: 5px;
@@ -69,10 +68,6 @@
             document.getElementById('chat').innerHTML +=
                 `<div style="color:#888;font-size:0.95em;">${formattedBangkok}</div>`;
 
-            // Display the chat message
-            document.getElementById('chat').innerHTML += `<b>${username}:</b> ${content}<br>`;
-
-            // Auto-scroll to bottom after adding a message
             const chatDiv = document.getElementById('chat');
 
             // Add new message as a div
