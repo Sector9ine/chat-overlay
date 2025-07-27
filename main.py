@@ -57,6 +57,10 @@ def listen_to_kick_chat(chatroom_id):
 def render_chat():
     return render_template('overlay.html')
 
+@app.route('/z')
+def z_ascii():
+    return render_template('z_ascii.html')
+
 thread = None
 
 # Connect to Redis (use Railway's Redis URL in production)
