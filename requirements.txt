@@ -1,4 +1,4 @@
 flask
+flask_socketio
 cloudscraper
 websocket-client
-redis
