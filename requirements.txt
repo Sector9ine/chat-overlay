@@ -1,0 +1,4 @@
+flask
+cloudscraper
+websocket-client
+redis

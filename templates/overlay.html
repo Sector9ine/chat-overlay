@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Chat</title>
+    <style>
+        #chat {
+            font-family: "Hack", "DejaVu Sans Mono", "Fira Mono", "Noto Mono", "Consolas", "Menlo", "Monaco", "Courier New", monospace;
+            font-size: 1.1em;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log("Connected to socket.");
+        });
+
+        socket.on('chat_message', function(msg) {
+            // Parse the data field
+            let dataObj;
+            try {
+                dataObj = JSON.parse(msg.data);
+            } catch (e) {
+                console.error("Failed to parse chat message data:", e, msg.data);
+                return;
+            }
+            const username = dataObj.sender?.username || "Unknown";
+            const content = dataObj.content || "";
+            const createdAt = dataObj.created_at || "";
+
+            // Skip if username is "Unknown" or content contains "[emote:"
+            if (username === "Unknown" || content.includes("[emote:")) {
+                return;
+            }
+
+            // Convert createdAt to Bangkok time (UTC+7)
+            const utcDate = new Date(createdAt);
+            // Get the time in milliseconds, add 7 hours
+            const bangkokDate = new Date(utcDate.getTime() - 0 * 60 * 60 * 1000);
+
+            // Format as YYYY-MM-DDTHH:mm:ss
+            const pad = n => n.toString().padStart(2, '0');
+            const formattedBangkok =
+                bangkokDate.getFullYear() + '-' +
+                pad(bangkokDate.getMonth() + 1) + '-' +
+                pad(bangkokDate.getDate()) + 'T' +
+                pad(bangkokDate.getHours()) + ':' +
+                pad(bangkokDate.getMinutes()) + ':' +
+                pad(bangkokDate.getSeconds());
+
+            // Show the Bangkok time above the message, in grey
+            document.getElementById('chat').innerHTML +=
+                `<div style="color:#888;font-size:0.95em;">${formattedBangkok}</div>`;
+
+            // Display the chat message
+            document.getElementById('chat').innerHTML += `<b>${username}:</b> ${content}<br>`;
+        });
+    </script>
+</body>
+</html>
+
