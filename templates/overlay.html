@@ -9,6 +9,12 @@
             color: #ffffff;
             padding: 10px;
             border-radius: 5px;
+            width: 600px;            /* Fixed width */
+            height: 600px;           /* Fixed height */
+            overflow-y: auto;        /* Scroll vertically if needed */
+            overflow-x: hidden;      /* Prevent horizontal scroll */
+            word-break: break-word;  /* Wrap long words/lines */
+            box-sizing: border-box;  /* Include padding in width/height */
         }
     </style>
 </head>
@@ -62,6 +68,10 @@
 
             // Display the chat message
             document.getElementById('chat').innerHTML += `<b>${username}:</b> ${content}<br>`;
+
+            // Auto-scroll to bottom after adding a message
+            const chatDiv = document.getElementById('chat');
+            chatDiv.scrollTop = chatDiv.scrollHeight;
         });
     </script>
 </body>
