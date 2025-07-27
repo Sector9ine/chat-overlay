@@ -6,15 +6,18 @@
         #chat {
             font-family: "Hack", "DejaVu Sans Mono", "Fira Mono", "Noto Mono", "Consolas", "Menlo", "Monaco", "Courier New", monospace;
             font-size: 1.1em;
+            background: #181818;
             color: #ffffff;
             padding: 10px;
             border-radius: 5px;
-            width: 600px;            /* Fixed width */
-            height: 600px;           /* Fixed height */
-            overflow-y: auto;        /* Scroll vertically if needed */
-            overflow-x: hidden;      /* Prevent horizontal scroll */
-            word-break: break-word;  /* Wrap long words/lines */
-            box-sizing: border-box;  /* Include padding in width/height */
+            width: 600px;
+            height: 600px;
+            overflow: hidden;         /* No scrollbars */
+            word-break: break-word;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Keep messages at the bottom */
         }
     </style>
 </head>
@@ -71,7 +74,17 @@
 
             // Auto-scroll to bottom after adding a message
             const chatDiv = document.getElementById('chat');
-            chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            // Add new message as a div
+            const msgDiv = document.createElement('div');
+            msgDiv.innerHTML = `<div style="color:#888;font-size:0.95em;">${formattedBangkok}</div><b>${username}:</b> ${content}`;
+            chatDiv.appendChild(msgDiv);
+
+            // Limit to last N messages (e.g., 20)
+            const maxMessages = 20;
+            while (chatDiv.children.length > maxMessages) {
+                chatDiv.removeChild(chatDiv.firstChild);
+            }
         });
     </script>
 </body>
