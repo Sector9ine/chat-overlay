@@ -7,6 +7,7 @@ import cloudscraper
 import websocket
 import json
 import os
+import redis
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -32,6 +33,7 @@ def listen_to_kick_chat(chatroom_id):
             data = json.loads(message)
             print("Received message:", data)
             socketio.emit('chat_message', data)
+            save_message(data)  # Save to Redis
         except Exception as e:
             print("Error:", e)
 
@@ -57,6 +59,20 @@ def render_chat():
 
 thread = None
 
+# Connect to Redis (use Railway's Redis URL in production)
+redis_url = os.environ.get("REDIS_URL")
+r = redis.from_url(redis_url, decode_responses=True)
+
+CHAT_HISTORY_KEY = "chat_history"
+MAX_HISTORY = 100  # Number of messages to keep
+
+def save_message(msg):
+    r.rpush(CHAT_HISTORY_KEY, json.dumps(msg))
+    r.ltrim(CHAT_HISTORY_KEY, -MAX_HISTORY, -1)
+
+def get_history():
+    return [json.loads(m) for m in r.lrange(CHAT_HISTORY_KEY, 0, -1)]
+
 @socketio.on('connect')
 def start_background_thread():
     global thread
@@ -64,6 +80,9 @@ def start_background_thread():
     if thread is None:
         thread = threading.Thread(target=listen_to_kick_chat, args=(chatroom_id,), daemon=True)
         thread.start()
+    # Send chat history to the client
+    for msg in get_history():
+        emit('chat_message', msg)
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)

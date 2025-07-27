@@ -3,3 +3,4 @@ flask_socketio
 cloudscraper
 websocket-client
 eventlet
+redis
