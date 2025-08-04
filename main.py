@@ -215,6 +215,15 @@ def render_chat():
 def render_animation():
     return render_template('animation.html')
 
+@app.route('/api/animation/frames')
+def get_animation_frames():
+    """Serve the lamp animation frames as JSON"""
+    from lamp_animation import frames, duration
+    return jsonify({
+        'frames': frames,
+        'duration': duration
+    })
+
 @app.route('/api/events/stats')
 def get_event_stats():
     """Get statistics about subscription events"""

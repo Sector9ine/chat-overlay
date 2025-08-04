@@ -4,6 +4,7 @@
     <title>Lamp Animation</title>
     <style>
         body {
+            background: black;
             color: white;
             font-family: monospace;
             font-size: 12px;
@@ -32,16 +33,20 @@
     <script>
         const socket = io();
         const animationDiv = document.getElementById('animation');
+        let frames = [];
+        let duration = 200;
         
-        // Animation data (copy all frames from lamp_animation.py)
-        const frames = [
-            // Copy all frames here from lamp_animation.py
-            // Example:
-            " \n \n \n \n \n \n \n \n \n \n \n \n \n \n                   ()\n                  <^^>\n                 .-\"\"-.                    \n      .---.    .\"-....-\"-._     _...---''`/\n     ( (`\\ \\ .'            ``-''    _.-\"'`\n      \\ \\ \\ : :.                 .-'\n       `\\`.\\: `:.             _.'\n       (  .'`.`            _.'\n        ``    `-..______.-'\n                  ):.  ( \n                .\"-....-\".\n          jgs .':.        `. \n              \"-..______..-\" ",
-            // ... add all other frames
-        ];
-        
-        const duration = 200; // milliseconds per frame
+        // Load animation data from backend
+        fetch('/api/animation/frames')
+            .then(response => response.json())
+            .then(data => {
+                frames = data.frames;
+                duration = data.duration;
+                console.log('Animation loaded:', frames.length, 'frames');
+            })
+            .catch(error => {
+                console.error('Error loading animation:', error);
+            });
         
         function playAnimation() {
             animationDiv.classList.remove('hidden');
