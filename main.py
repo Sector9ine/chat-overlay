@@ -9,6 +9,7 @@ import json
 import os
 import redis
 import time
+import re
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -27,6 +28,110 @@ def get_chatroom_id(slug):
     return chatroom_id
 
 chatroom_id = get_chatroom_id(kick_slug)
+
+def detect_and_handle_events(data):
+    """Detect subscription and gift subscription events and trigger actions"""
+    try:
+        # Parse the data field
+        if isinstance(data.get('data'), str):
+            event_data = json.loads(data['data'])
+        else:
+            event_data = data.get('data', {})
+        
+        content = event_data.get('content', '')
+        sender_username = event_data.get('sender', {}).get('username', '')
+        
+        # Check if it's a KickBot message (system messages)
+        if sender_username == 'KickBot':
+            # Detect gift subscription
+            gift_match = re.search(r'@(\w+)\s+just gifted\s+(\d+)\s+subs?', content)
+            if gift_match:
+                gifter = gift_match.group(1)
+                gift_count = int(gift_match.group(2))
+                print(f"🎁 GIFT SUB DETECTED: {gifter} gifted {gift_count} subs!")
+                trigger_gift_sub_action(gifter, gift_count)
+                return
+            
+            # Detect regular subscription
+            sub_match = re.search(r'@(\w+)\s+has subbed for\s+(\d+)\s+months?', content)
+            if sub_match:
+                subscriber = sub_match.group(1)
+                months = int(sub_match.group(2))
+                print(f"⭐ SUB DETECTED: {subscriber} subscribed for {months} months!")
+                trigger_sub_action(subscriber, months)
+                return
+            
+            # Detect first-time subscription (no months mentioned)
+            first_sub_match = re.search(r'@(\w+)\s+has subbed!', content)
+            if first_sub_match:
+                subscriber = first_sub_match.group(1)
+                print(f"⭐ FIRST SUB DETECTED: {subscriber} subscribed!")
+                trigger_sub_action(subscriber, 1)
+                return
+                
+    except Exception as e:
+        print(f"Error in event detection: {e}")
+
+def trigger_gift_sub_action(gifter, gift_count):
+    """Trigger action for gift subscription event"""
+    print(f"🎁 ACTION TRIGGERED: {gifter} gifted {gift_count} subs!")
+    
+    # Add your custom actions here:
+    # Examples:
+    # - Play a sound
+    # - Show an animation
+    # - Send a webhook
+    # - Update a counter
+    # - Trigger OBS scene change
+    
+    # Emit to frontend for visual effects
+    socketio.emit('gift_sub_event', {
+        'gifter': gifter,
+        'count': gift_count,
+        'timestamp': time.time()
+    })
+    
+    # Save to Redis for tracking
+    save_event_to_redis('gift_sub', {
+        'gifter': gifter,
+        'count': gift_count,
+        'timestamp': time.time()
+    })
+
+def trigger_sub_action(subscriber, months):
+    """Trigger action for subscription event"""
+    print(f"⭐ ACTION TRIGGERED: {subscriber} subscribed for {months} months!")
+    
+    # Add your custom actions here:
+    # Examples:
+    # - Play a sound
+    # - Show an animation
+    # - Send a webhook
+    # - Update a counter
+    # - Trigger OBS scene change
+    
+    # Emit to frontend for visual effects
+    socketio.emit('sub_event', {
+        'subscriber': subscriber,
+        'months': months,
+        'timestamp': time.time()
+    })
+    
+    # Save to Redis for tracking
+    save_event_to_redis('sub', {
+        'subscriber': subscriber,
+        'months': months,
+        'timestamp': time.time()
+    })
+
+def save_event_to_redis(event_type, event_data):
+    """Save event to Redis for tracking"""
+    try:
+        event_key = f"{event_type}_events"
+        r.rpush(event_key, json.dumps(event_data))
+        r.ltrim(event_key, -100, -1)  # Keep last 100 events
+    except Exception as e:
+        print(f"Error saving event to Redis: {e}")
 
 def listen_to_kick_chat(chatroom_id):
     def on_message(ws, message):
@@ -51,6 +156,9 @@ def listen_to_kick_chat(chatroom_id):
                     print(f"Pusher error {error_code} - reconnecting...")
                     ws.close()
                     return
+            
+            # Detect and handle subscription events
+            detect_and_handle_events(data)
             
             socketio.emit('chat_message', data)
             save_message(data)  # Save to Redis
@@ -103,9 +211,41 @@ def listen_to_kick_chat(chatroom_id):
 def render_chat():
     return render_template('overlay.html')
 
-@app.route('/z')
-def z_ascii():
-    return render_template('z_ascii.html')
+@app.route('/api/events/stats')
+def get_event_stats():
+    """Get statistics about subscription events"""
+    try:
+        # Get recent events from Redis
+        sub_events = [json.loads(e) for e in r.lrange('sub_events', 0, -1)]
+        gift_sub_events = [json.loads(e) for e in r.lrange('gift_sub_events', 0, -1)]
+        
+        # Calculate stats
+        total_subs = len(sub_events)
+        total_gift_subs = len(gift_sub_events)
+        total_gifted_subs = sum(e.get('count', 1) for e in gift_sub_events)
+        
+        # Recent events (last 10)
+        recent_subs = sub_events[-10:] if sub_events else []
+        recent_gift_subs = gift_sub_events[-10:] if gift_sub_events else []
+        
+        return jsonify({
+            'total_subs': total_subs,
+            'total_gift_subs': total_gift_subs,
+            'total_gifted_subs': total_gifted_subs,
+            'recent_subs': recent_subs,
+            'recent_gift_subs': recent_gift_subs
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/events/clear')
+def clear_events():
+    """Clear all event history"""
+    try:
+        r.delete('sub_events', 'gift_sub_events')
+        return jsonify({'message': 'Events cleared successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 thread = None
 
