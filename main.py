@@ -224,6 +224,12 @@ def get_animation_frames():
         'duration': duration
     })
 
+@app.route('/egyptian_sound')
+def serve_egyptian_sound():
+    """Serve the Egyptian sound effect"""
+    from flask import send_file
+    return send_file('egyptian fortress boss.ogg', mimetype='audio/ogg')
+
 @app.route('/api/events/stats')
 def get_event_stats():
     """Get statistics about subscription events"""

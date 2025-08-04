@@ -33,6 +33,9 @@
 </head>
 <body>
     <div id="animation" class="hidden"></div>
+    <audio id="egyptianSound" preload="auto">
+        <source src="/egyptian_sound" type="audio/ogg">
+    </audio>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
@@ -53,35 +56,85 @@
                 console.error('Error loading animation:', error);
             });
         
-        function playAnimation() {
+        function playAnimation(subscriberData = null) {
             animationDiv.classList.remove('hidden');
             let currentFrame = 0;
             
+            // Start playing the Egyptian sound
+            const audio = document.getElementById('egyptianSound');
+            audio.currentTime = 0;
+            audio.volume = 1.0;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+            
             const interval = setInterval(() => {
                 if (currentFrame < frames.length) {
-                    animationDiv.textContent = frames[currentFrame];
+                    let frameContent = frames[currentFrame];
+                    
+                    // Add thank you message if subscriber data is provided
+                    if (subscriberData) {
+                        let message = '';
+                        if (subscriberData.type === 'gift') {
+                            const count = subscriberData.count > 1 ? 's' : '';
+                            message = `Thanks ${subscriberData.gifter} for the ${subscriberData.count} gifted sub${count}!`;
+                        } else {
+                            const months = subscriberData.months > 1 ? 's' : '';
+                            message = `Thanks ${subscriberData.subscriber} for the ${subscriberData.months} month${months} sub!`;
+                        }
+                        
+                        // Add message to the top of the frame
+                        frameContent = message + '\n\n' + frameContent;
+                    }
+                    
+                    animationDiv.textContent = frameContent;
                     currentFrame++;
                 } else {
                     clearInterval(interval);
                     animationDiv.classList.add('hidden');
+                    
+                    // Fade out the audio
+                    fadeOutAudio(audio);
                 }
             }, duration);
+        }
+        
+        function fadeOutAudio(audio) {
+            const fadeInterval = setInterval(() => {
+                if (audio.volume > 0.1) {
+                    audio.volume -= 0.1;
+                } else {
+                    audio.pause();
+                    audio.volume = 1.0; // Reset volume for next time
+                    clearInterval(fadeInterval);
+                }
+            }, 100); // Fade out over ~1 second
         }
         
         // Listen for subscription events
         socket.on('sub_event', function(data) {
             console.log('Subscription detected:', data);
-            playAnimation();
+            playAnimation({
+                type: 'sub',
+                subscriber: data.subscriber,
+                months: data.months
+            });
         });
         
         socket.on('gift_sub_event', function(data) {
             console.log('Gift subscription detected:', data);
-            playAnimation();
+            playAnimation({
+                type: 'gift',
+                gifter: data.gifter,
+                count: data.count
+            });
         });
         
         // For testing - you can trigger manually
         window.playTest = function() {
-            playAnimation();
+            playAnimation({
+                type: 'sub',
+                subscriber: 'TestUser',
+                months: 1
+            });
         };
     </script>
 </body>
