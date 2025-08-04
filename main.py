@@ -34,11 +34,21 @@ def listen_to_kick_chat(chatroom_id):
             data = json.loads(message)
             print("Received message:", data)
             
+            # Handle Pusher ping messages
+            if data.get("event") == "pusher:ping":
+                print("Received ping, sending pong...")
+                ws.send(json.dumps({"event": "pusher:pong", "data": {}}))
+                return
+            
             # Check if it's a Pusher error that requires reconnection
             if data.get("event") == "pusher:error":
                 error_data = data.get("data", {})
-                if error_data.get("code") == 4200:
-                    print("Pusher error 4200 - reconnecting...")
+                error_code = error_data.get("code")
+                print(f"Pusher error {error_code}: {error_data.get('message')}")
+                
+                # Handle specific error codes
+                if error_code in [4200, 4201, 4202]:  # Connection errors
+                    print(f"Pusher error {error_code} - reconnecting...")
                     ws.close()
                     return
             
@@ -59,6 +69,7 @@ def listen_to_kick_chat(chatroom_id):
 
     def on_open(ws):
         print("WebSocket connection opened")
+        # Subscribe to the chatroom
         ws.send(json.dumps({
             "event": "pusher:subscribe",
             "data": {
@@ -69,6 +80,7 @@ def listen_to_kick_chat(chatroom_id):
 
     def start_websocket_connection():
         try:
+            # Enable ping/pong handling and set keepalive
             ws = websocket.WebSocketApp(
                 "wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false",
                 on_open=on_open,
@@ -76,7 +88,8 @@ def listen_to_kick_chat(chatroom_id):
                 on_error=on_error,
                 on_close=on_close
             )
-            ws.run_forever()
+            # Set ping interval and timeout for better connection stability
+            ws.run_forever(ping_interval=30, ping_timeout=10)
         except Exception as e:
             print(f"Failed to start WebSocket connection: {e}")
             # Retry after delay
