@@ -211,6 +211,10 @@ def listen_to_kick_chat(chatroom_id):
 def render_chat():
     return render_template('overlay.html')
 
+@app.route('/animation')
+def render_animation():
+    return render_template('animation.html')
+
 @app.route('/api/events/stats')
 def get_event_stats():
     """Get statistics about subscription events"""

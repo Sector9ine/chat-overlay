@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lamp Animation</title>
+    <style>
+        body {
+            color: white;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #animation {
+            white-space: pre;
+            text-align: center;
+            line-height: 1.2;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="animation" class="hidden"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const animationDiv = document.getElementById('animation');
+        
+        // Animation data (copy all frames from lamp_animation.py)
+        const frames = [
+            // Copy all frames here from lamp_animation.py
+            // Example:
+            " \n \n \n \n \n \n \n \n \n \n \n \n \n \n                   ()\n                  <^^>\n                 .-\"\"-.                    \n      .---.    .\"-....-\"-._     _...---''`/\n     ( (`\\ \\ .'            ``-''    _.-\"'`\n      \\ \\ \\ : :.                 .-'\n       `\\`.\\: `:.             _.'\n       (  .'`.`            _.'\n        ``    `-..______.-'\n                  ):.  ( \n                .\"-....-\".\n          jgs .':.        `. \n              \"-..______..-\" ",
+            // ... add all other frames
+        ];
+        
+        const duration = 200; // milliseconds per frame
+        
+        function playAnimation() {
+            animationDiv.classList.remove('hidden');
+            let currentFrame = 0;
+            
+            const interval = setInterval(() => {
+                if (currentFrame < frames.length) {
+                    animationDiv.textContent = frames[currentFrame];
+                    currentFrame++;
+                } else {
+                    clearInterval(interval);
+                    animationDiv.classList.add('hidden');
+                }
+            }, duration);
+        }
+        
+        // Listen for subscription events
+        socket.on('sub_event', function(data) {
+            console.log('Subscription detected:', data);
+            playAnimation();
+        });
+        
+        socket.on('gift_sub_event', function(data) {
+            console.log('Gift subscription detected:', data);
+            playAnimation();
+        });
+        
+        // For testing - you can trigger manually
+        window.playTest = function() {
+            playAnimation();
+        };
+    </script>
+</body>
+</html> 
